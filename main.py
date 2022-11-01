@@ -1,3 +1,3 @@
-from pkg.lib import is_miller_rabin_passed
+from pkg.lib import gen_rsa
 
-print(is_miller_rabin_passed(53))
+print(gen_rsa())
