@@ -61,11 +61,19 @@ def is_miller_rabin_passed(n: int, k: Optional[int] = None) -> bool:
     return True
 
 
-def get_random_odd_num(length: int = 1024) -> int:
-    """Generates random odd number with specified length"""
+def get_random_num(length: int = 1024, odd_only: bool = False) -> int:
+    """
+    Generates random number with specified length
+    :param int length: digits count
+    :param bool odd_only: to get only odd numbers
 
-    rand_num = random.getrandbits(length)
-    rand_num |= (1 << length - 1) | 1
+    :return int: random number
+    """
+
+    rand_num = random.randint(10**(length-1), 10**length - 1)
+
+    if odd_only:
+        rand_num |= (1 << length - 1) | 1
 
     return rand_num
 
@@ -74,11 +82,21 @@ def get_random_prime(length: int = 1024) -> int:
     '''Generates random prime number with specified length'''
 
     while True:
-        rand_odd = get_random_odd_num(length)
+        rand_odd = get_random_num(length, True)
 
         if is_miller_rabin_passed(rand_odd):
             return rand_odd
 
+
+def xgcd(a: int, b: int):
+    """return (g, x, y) such that a*x + b*y = g = gcd(a, b)"""
+    x0, x1, y0, y1 = 0, 1, 1, 0
+    while a != 0:
+        q, b, a = b // a, a, b % a
+        y0, y1 = y1, y0 - q * y1
+        x0, x1 = x1, x0 - q * x1
+
+    return b, x0, y0
 
 def gen_rsa(length: int = 2048):
     half_length = length // 2
@@ -96,7 +114,7 @@ def gen_rsa(length: int = 2048):
 
     # Step 2: Searching for e that is relativly prime to (p - 1) * (q - 1)
     while True:
-        e = random.getrandbits(half_length)
+        e = get_random_num(half_length)
         
         if gcd(e, phi) == 1:
             break
@@ -104,12 +122,22 @@ def gen_rsa(length: int = 2048):
     print(f'e = {e}')
 
     # Step 3: Calculating d, the mod inverse of e
-    k = 1
-    while True:
-        if (k * phi + 1) % e == 0:
-            d = (k * phi + 1) // e
-            break
-        k+=1
+    *_, d = xgcd(phi, e)
 
     print(f'd = {d}')
     
+    return (d, n), (e, n)
+
+
+def encrypt(message: str, key: tuple) -> str:
+    e, n = key
+    cipher = [pow(ord(char), e, n) for char in message]
+
+    return cipher
+
+
+def decrypt(cipher: str, key: tuple) -> str:
+    d, n = key
+    message = [chr(pow(char, d, n)) for char in cipher]
+
+    return ''.join(message)
